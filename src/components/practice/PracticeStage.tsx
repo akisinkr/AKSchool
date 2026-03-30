@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { StageTransition } from '@/components/shared/StageTransition'
 import { PointsAnimation } from '@/components/shared/PointsAnimation'
@@ -30,6 +30,7 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
 
   const questions = content.questions || []
   const question = questions[currentIndex]
+  const skipRef = useRef(false)
 
   const handleQuestionComplete = useCallback(
     (correct: boolean, retried: boolean, retryCorrect: boolean | null) => {
@@ -59,6 +60,30 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
     [currentIndex, results, questions.length, onComplete, onQuestionChange]
   )
 
+  // Auto-skip questions that lack enough data
+  useEffect(() => {
+    if (!question || skipRef.current) return
+
+    const hasOptions = (question.options?.length ?? 0) >= 2
+    const hasTiles = (question.tiles?.length ?? 0) >= 1 && (question.blanks?.length ?? 0) >= 1
+    const hasImages = (question.image_descriptions?.length ?? 0) >= 2
+
+    let shouldSkip = false
+    if (question.type === 'multiple_choice' && !hasOptions) shouldSkip = true
+    if (question.type === 'drag_drop' && !hasTiles) shouldSkip = true
+    if (question.type === 'image_match' && !hasImages) shouldSkip = true
+    if (question.type === 'typed_spoken' && !question.stem) shouldSkip = true
+
+    if (shouldSkip) {
+      skipRef.current = true
+      const timer = setTimeout(() => {
+        skipRef.current = false
+        handleQuestionComplete(true, false, null)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [currentIndex, question, handleQuestionComplete])
+
   function renderQuestion(q: PracticeQuestion | undefined) {
     if (!q) return null
     const commonProps = {
@@ -67,17 +92,6 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
       warmResponseIncorrect: q.warm_response_incorrect || 'Not quite — try again!',
       onComplete: handleQuestionComplete,
     }
-
-    // Skip questions that don't have enough data — auto-advance with correct
-    const hasOptions = (q.options?.length ?? 0) >= 2
-    const hasTiles = (q.tiles?.length ?? 0) >= 1 && (q.blanks?.length ?? 0) >= 1
-    const hasImages = (q.image_descriptions?.length ?? 0) >= 2
-    const hasAcceptable = (q.acceptable_answers?.length ?? 0) >= 1
-
-    if (q.type === 'multiple_choice' && !hasOptions) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
-    if (q.type === 'drag_drop' && !hasTiles) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
-    if (q.type === 'image_match' && !hasImages) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
-    if (q.type === 'typed_spoken' && !hasAcceptable && !q.stem) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
 
     switch (q.type) {
       case 'multiple_choice':

@@ -42,7 +42,7 @@ export function ApplyStage({ content, isAriaPlaying, onComplete }: ApplyStagePro
   }
 
   function handleRequestHint() {
-    if (hintsUsed < 3) {
+    if (hintsUsed < (content.hints?.length || 0)) {
       setShowHint(true)
       setHintsUsed((prev) => prev + 1)
     }
@@ -199,7 +199,7 @@ export function ApplyStage({ content, isAriaPlaying, onComplete }: ApplyStagePro
 
             {/* Hint button */}
             <div className="flex items-center gap-4 mb-6">
-              {hintsUsed < 3 && (
+              {hintsUsed < (content.hints?.length || 0) && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -207,7 +207,7 @@ export function ApplyStage({ content, isAriaPlaying, onComplete }: ApplyStagePro
                   onClick={handleRequestHint}
                   className="px-5 py-2 text-amber-500 border border-amber-300 rounded-full text-sm hover:bg-amber-50 transition-colors"
                 >
-                  💡 Need a hint? ({3 - hintsUsed} left)
+                  💡 Need a hint? ({(content.hints?.length || 0) - hintsUsed} left)
                 </motion.button>
               )}
             </div>

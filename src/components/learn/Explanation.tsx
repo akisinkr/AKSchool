@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface ExplanationChunk {
   aria_script: string
@@ -18,21 +18,29 @@ interface ExplanationProps {
 
 export function Explanation({ chunks, onComplete, isAriaPlaying, currentChunkFromAria }: ExplanationProps) {
   const safeChunks = chunks || []
-  const [currentChunk, setCurrentChunk] = useState(currentChunkFromAria ?? 0)
+  const [currentChunk, setCurrentChunk] = useState(Math.min(currentChunkFromAria ?? 0, Math.max(safeChunks.length - 1, 0)))
+  const [skipEmpty, setSkipEmpty] = useState(false)
 
-  if (safeChunks.length === 0) {
-    onComplete()
-    return null
-  }
+  // Handle empty chunks via useEffect instead of during render
+  useEffect(() => {
+    if (safeChunks.length === 0 && !skipEmpty) {
+      setSkipEmpty(true)
+      onComplete()
+    }
+  }, [safeChunks.length, onComplete, skipEmpty])
+
+  if (safeChunks.length === 0) return null
 
   const chunk = safeChunks[currentChunk]
+  if (!chunk) return null
+
   const isLastChunk = currentChunk === safeChunks.length - 1
 
   function handleNext() {
     if (isLastChunk) {
       onComplete()
     } else {
-      setCurrentChunk((prev) => prev + 1)
+      setCurrentChunk((prev) => Math.min(prev + 1, safeChunks.length - 1))
     }
   }
 
@@ -64,7 +72,7 @@ export function Explanation({ chunks, onComplete, isAriaPlaying, currentChunkFro
         >
           {/* Visual placeholder */}
           <div className="w-56 h-56 mb-6 rounded-2xl bg-amber-100 border-2 border-amber-200 flex items-center justify-center">
-            <p className="text-sm text-amber-400 text-center px-4">{chunk.visual_description}</p>
+            <p className="text-sm text-amber-400 text-center px-4">{chunk.visual_description || ''}</p>
           </div>
 
           {/* Text on screen */}
@@ -74,7 +82,7 @@ export function Explanation({ chunks, onComplete, isAriaPlaying, currentChunkFro
             transition={{ delay: 0.2 }}
             className="text-lg text-amber-900 text-center font-medium"
           >
-            {chunk.text_onscreen}
+            {chunk.text_onscreen || ''}
           </motion.p>
         </motion.div>
       </AnimatePresence>
