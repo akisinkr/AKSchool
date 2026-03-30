@@ -34,6 +34,8 @@ export function DragDrop({
   const [showPoints, setShowPoints] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [firstWasWrong, setFirstWasWrong] = useState(false)
+  const [readyToAdvance, setReadyToAdvance] = useState(false)
+  const [readyToRetry, setReadyToRetry] = useState(false)
 
   const allFilled = blanks.every((b) => filledBlanks[b] !== undefined)
 
@@ -44,24 +46,12 @@ export function DragDrop({
 
   function handleBlankTap(blank: string) {
     if (showFeedback) return
-
-    // If blank is already filled, tap it to remove the tile
     if (filledBlanks[blank] !== undefined) {
       const removedTile = filledBlanks[blank]
-      setFilledBlanks((prev) => {
-        const next = { ...prev }
-        delete next[blank]
-        return next
-      })
-      setUsedTiles((prev) => {
-        const next = new Set(prev)
-        next.delete(removedTile)
-        return next
-      })
+      setFilledBlanks((prev) => { const next = { ...prev }; delete next[blank]; return next })
+      setUsedTiles((prev) => { const next = new Set(prev); next.delete(removedTile); return next })
       return
     }
-
-    // Place selected tile into blank
     if (!selectedTile) return
     setFilledBlanks((prev) => ({ ...prev, [blank]: selectedTile }))
     setUsedTiles((prev) => new Set(prev).add(selectedTile))
@@ -75,35 +65,37 @@ export function DragDrop({
 
     if (correct) {
       setShowPoints(true)
-      setTimeout(() => onComplete(true, firstWasWrong, firstWasWrong ? true : null), 2000)
+      setReadyToAdvance(true)
     } else if (attempt === 0) {
       setFirstWasWrong(true)
-      setTimeout(() => {
-        setShowFeedback(false)
-        setFilledBlanks({})
-        setUsedTiles(new Set())
-        setSelectedTile(null)
-        setAttempt(1)
-      }, 2000)
+      setReadyToRetry(true)
     } else {
-      setTimeout(() => onComplete(false, true, false), 2000)
+      setReadyToAdvance(true)
     }
+  }
+
+  function handleRetry() {
+    setShowFeedback(false)
+    setFilledBlanks({})
+    setUsedTiles(new Set())
+    setSelectedTile(null)
+    setAttempt(1)
+    setReadyToRetry(false)
+  }
+
+  function handleNext() {
+    onComplete(isCorrect, firstWasWrong, firstWasWrong && isCorrect ? true : firstWasWrong ? false : null)
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12">
       <PointsAnimation points={5} show={showPoints} />
 
-      {/* Instructions */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="mb-4 text-sm text-amber-400"
-      >
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4 text-sm text-amber-400">
         Tap a number, then tap the blank to place it. Tap a filled blank to remove it.
       </motion.p>
 
-      {attempt === 1 && (
+      {attempt === 1 && !showFeedback && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-2 text-sm text-orange-400 font-medium">
           Try again!
         </motion.p>
@@ -116,15 +108,10 @@ export function DragDrop({
         </motion.div>
       )}
 
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-xl text-amber-900 text-center font-medium mb-8 max-w-md"
-      >
+      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-xl text-amber-900 text-center font-medium mb-8 max-w-md">
         {stem}
       </motion.p>
 
-      {/* Blanks */}
       <div className="flex flex-wrap gap-3 justify-center mb-8">
         {blanks.map((blank, i) => (
           <motion.button
@@ -135,7 +122,7 @@ export function DragDrop({
             onClick={() => handleBlankTap(blank)}
             className={`min-w-[80px] h-12 px-4 rounded-xl border-2 border-dashed text-lg font-medium flex items-center justify-center transition-colors ${
               filledBlanks[blank]
-                ? 'bg-amber-100 border-amber-400 text-amber-900'
+                ? 'bg-amber-100 border-amber-400 text-amber-900 cursor-pointer'
                 : selectedTile
                   ? 'border-amber-400 bg-amber-50 text-amber-400 cursor-pointer'
                   : 'border-amber-200 bg-white text-amber-300'
@@ -146,7 +133,6 @@ export function DragDrop({
         ))}
       </div>
 
-      {/* Tiles */}
       <div className="flex flex-wrap gap-3 justify-center mb-8">
         {tiles.map((tile, i) => (
           <motion.button
@@ -169,23 +155,28 @@ export function DragDrop({
         ))}
       </div>
 
-      {/* Check button */}
       {allFilled && !showFeedback && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={handleCheck}
-          className="px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors"
-        >
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={handleCheck}
+          className="px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
           Check ✓
         </motion.button>
       )}
 
-      <WarmFeedback
-        type={isCorrect ? 'correct' : 'incorrect'}
-        message={isCorrect ? warmResponseCorrect : warmResponseIncorrect}
-        show={showFeedback}
-      />
+      <WarmFeedback type={isCorrect ? 'correct' : 'incorrect'} message={isCorrect ? warmResponseCorrect : warmResponseIncorrect} show={showFeedback} />
+
+      {readyToRetry && (
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={handleRetry}
+          className="mt-6 px-8 py-3 bg-orange-300 hover:bg-orange-400 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
+          Try Again
+        </motion.button>
+      )}
+
+      {readyToAdvance && (
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={handleNext}
+          className="mt-6 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
+          Next →
+        </motion.button>
+      )}
     </div>
   )
 }

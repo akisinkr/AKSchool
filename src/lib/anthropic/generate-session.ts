@@ -177,17 +177,21 @@ function normalizePractice(raw: any): PracticeQuestions {
       imageDescs = imageDescs.map((d: any) => d.text || d.description || d.label || String(d))
     }
 
-    // Normalize tiles — might be objects
+    // Normalize tiles — might be objects or non-strings
     let tiles = q.tiles || []
-    if (tiles.length > 0 && typeof tiles[0] === 'object') {
-      tiles = tiles.map((t: any) => t.text || t.label || t.value || String(t))
-    }
+    tiles = tiles.map((t: any) => {
+      if (typeof t === 'string') return t
+      if (typeof t === 'object') return t.text || t.label || t.value || String(t)
+      return String(t)
+    })
 
-    // Normalize blanks — might be objects
+    // Normalize blanks — might be objects or non-strings
     let blanks = q.blanks || []
-    if (blanks.length > 0 && typeof blanks[0] === 'object') {
-      blanks = blanks.map((b: any) => b.text || b.label || b.position || b.id || String(b))
-    }
+    blanks = blanks.map((b: any) => {
+      if (typeof b === 'string') return b
+      if (typeof b === 'object') return b.text || b.label || b.position || b.id || String(b)
+      return String(b)
+    })
 
     // Build correct_mapping from various AI response formats
     const correctMapping: Record<string, string> = { ...(q.correct_mapping || q.correctMapping || {}) }
@@ -250,6 +254,24 @@ function normalizePractice(raw: any): PracticeQuestions {
     aria_perfect_score_response: raw.aria_perfect_score_response || raw.perfectScoreResponse || 'Perfect score! Amazing work!',
   }
 }
+function normalizeApply(raw: any): ApplyChallenge {
+  // Normalize hints — might be strings or objects {text, level}
+  let hints = raw.hints || []
+  hints = hints.map((h: any) => {
+    if (typeof h === 'string') return h
+    return h.text || h.hint || h.content || String(h)
+  })
+
+  return {
+    environment: raw.environment || '',
+    environment_description: raw.environment_description || raw.environmentDescription || '',
+    aria_opening: raw.aria_opening || raw.ariaOpening || '',
+    challenge_description: raw.challenge_description || raw.challengeDescription || raw.challenge || '',
+    hints: hints as [string, string, string],
+    submission_type: raw.submission_type || raw.submissionType || 'text',
+    aria_closing: raw.aria_closing || raw.ariaClosing || '',
+  }
+}
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export async function generateSessionContent(
@@ -306,11 +328,11 @@ export async function generateSessionContent(
     return {
       learn_content: normalizedLearn,
       practice_questions: normalizedPractice,
-      apply_challenge: cached.apply_challenge as ApplyChallenge,
+      apply_challenge: normalizeApply(cached.apply_challenge) as ApplyChallenge,
       aria_scripts: extractAriaScripts(
         normalizedLearn,
         normalizedPractice,
-        cached.apply_challenge as ApplyChallenge
+        normalizeApply(cached.apply_challenge) as ApplyChallenge
       ),
     }
   }
@@ -346,7 +368,8 @@ export async function generateSessionContent(
   // Normalize AI responses to match expected interfaces
   const learnContent = normalizeLearn(rawLearn) as LearnContent
   const practiceQuestions = normalizePractice(rawPractice) as PracticeQuestions
-  const applyChallenge = rawApply as ApplyChallenge
+  const normalizedApply = normalizeApply(rawApply)
+  const applyChallenge = normalizedApply as ApplyChallenge
 
   const ariaScripts = extractAriaScripts(learnContent, practiceQuestions, applyChallenge)
 

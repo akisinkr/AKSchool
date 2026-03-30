@@ -28,12 +28,13 @@ export function TypedSpoken({
   const [showPoints, setShowPoints] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [firstWasWrong, setFirstWasWrong] = useState(false)
+  const [readyToAdvance, setReadyToAdvance] = useState(false)
+  const [readyToRetry, setReadyToRetry] = useState(false)
 
   function checkAnswer() {
     if (!answer.trim() || showFeedback) return
 
     const normalized = answer.trim().toLowerCase()
-    // If no acceptable answers defined, accept any non-empty response (open-ended question)
     const correct = acceptableAnswers.length === 0
       ? normalized.length > 0
       : acceptableAnswers.some(
@@ -45,24 +46,31 @@ export function TypedSpoken({
 
     if (correct) {
       setShowPoints(true)
-      setTimeout(() => onComplete(true, firstWasWrong, firstWasWrong ? true : null), 2000)
+      setReadyToAdvance(true)
     } else if (attempt === 0) {
       setFirstWasWrong(true)
-      setTimeout(() => {
-        setShowFeedback(false)
-        setAnswer('')
-        setAttempt(1)
-      }, 2500)
+      setReadyToRetry(true)
     } else {
-      setTimeout(() => onComplete(false, true, false), 2000)
+      setReadyToAdvance(true)
     }
+  }
+
+  function handleRetry() {
+    setShowFeedback(false)
+    setAnswer('')
+    setAttempt(1)
+    setReadyToRetry(false)
+  }
+
+  function handleNext() {
+    onComplete(isCorrect, firstWasWrong, firstWasWrong && isCorrect ? true : firstWasWrong ? false : null)
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12">
       <PointsAnimation points={5} show={showPoints} />
 
-      {attempt === 1 && (
+      {attempt === 1 && !showFeedback && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-2 text-sm text-orange-400 font-medium">
           Have another go!
         </motion.p>
@@ -75,21 +83,11 @@ export function TypedSpoken({
         </motion.div>
       )}
 
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-xl text-amber-900 text-center font-medium mb-8 max-w-md"
-      >
+      <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-xl text-amber-900 text-center font-medium mb-8 max-w-md">
         {stem}
       </motion.p>
 
-      {/* Text input */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="w-full max-w-sm"
-      >
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full max-w-sm">
         <input
           type="text"
           value={answer}
@@ -101,23 +99,28 @@ export function TypedSpoken({
         />
       </motion.div>
 
-      {/* Submit button */}
       {answer.trim() && !showFeedback && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={checkAnswer}
-          className="mt-6 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors"
-        >
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={checkAnswer}
+          className="mt-6 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
           Submit ✓
         </motion.button>
       )}
 
-      <WarmFeedback
-        type={isCorrect ? 'correct' : 'incorrect'}
-        message={isCorrect ? warmResponseCorrect : warmResponseIncorrect}
-        show={showFeedback}
-      />
+      <WarmFeedback type={isCorrect ? 'correct' : 'incorrect'} message={isCorrect ? warmResponseCorrect : warmResponseIncorrect} show={showFeedback} />
+
+      {readyToRetry && (
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={handleRetry}
+          className="mt-6 px-8 py-3 bg-orange-300 hover:bg-orange-400 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
+          Try Again
+        </motion.button>
+      )}
+
+      {readyToAdvance && (
+        <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} onClick={handleNext}
+          className="mt-6 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors">
+          Next →
+        </motion.button>
+      )}
     </div>
   )
 }

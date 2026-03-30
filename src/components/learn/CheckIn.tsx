@@ -36,20 +36,13 @@ export function CheckIn({
     setSelectedIndex(index)
     setShowFeedback(true)
     setAnswered(true)
-
-    if (index === correctIndex) {
-      setShowPoints(true)
-      setTimeout(() => onComplete(true), 2000)
-    } else {
-      setTimeout(() => onComplete(false), 2500)
-    }
+    if (index === correctIndex) setShowPoints(true)
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 bg-gradient-to-b from-amber-50 to-orange-50">
       <PointsAnimation points={10} show={showPoints} />
 
-      {/* Question indicator */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -58,7 +51,6 @@ export function CheckIn({
         Quick Check-In
       </motion.div>
 
-      {/* Question text */}
       {ariaScript && (
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -69,24 +61,13 @@ export function CheckIn({
         </motion.p>
       )}
 
-      {/* Aria speaking indicator */}
       {isAriaPlaying && (
-        <motion.div
-          className="mb-8 flex items-center gap-2 text-amber-600"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <motion.span
-            animate={{ scale: [1, 1.3, 1] }}
-            transition={{ repeat: Infinity, duration: 1.2 }}
-          >
-            🎤
-          </motion.span>
+        <motion.div className="mb-8 flex items-center gap-2 text-amber-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <motion.span animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}>🎤</motion.span>
           <span className="text-sm">Miss Aria is asking...</span>
         </motion.div>
       )}
 
-      {/* Answer tiles */}
       <div className="grid grid-cols-2 gap-4 max-w-sm w-full">
         {answerOptions.map((option, i) => {
           let tileStyle = 'bg-white border-2 border-amber-200 text-amber-900'
@@ -108,14 +89,8 @@ export function CheckIn({
               disabled={answered}
               className={`p-4 rounded-2xl text-center text-lg font-medium shadow-sm transition-colors ${tileStyle}`}
             >
-              {/* Gentle amber wobble for wrong answer — no red, no X */}
               {answered && i === selectedIndex && !isCorrect ? (
-                <motion.span
-                  animate={{ x: [-3, 3, -3, 0] }}
-                  transition={{ duration: 0.4 }}
-                >
-                  {option}
-                </motion.span>
+                <motion.span animate={{ x: [-3, 3, -3, 0] }} transition={{ duration: 0.4 }}>{option}</motion.span>
               ) : (
                 option
               )}
@@ -124,12 +99,23 @@ export function CheckIn({
         })}
       </div>
 
-      {/* Warm feedback */}
       <WarmFeedback
         type={isCorrect ? 'correct' : 'incorrect'}
         message={isCorrect ? warmResponseCorrect : warmResponseIncorrect}
         show={showFeedback}
       />
+
+      {answered && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          onClick={() => onComplete(isCorrect)}
+          className="mt-6 px-8 py-3 bg-amber-400 hover:bg-amber-500 text-white text-lg font-semibold rounded-full shadow-md transition-colors"
+        >
+          Next →
+        </motion.button>
+      )}
     </div>
   )
 }
