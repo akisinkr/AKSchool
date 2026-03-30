@@ -129,10 +129,11 @@ export default function Home() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white/60 rounded-2xl p-4 border border-gray-100 text-center"
+          className="bg-white/60 rounded-2xl p-4 border border-gray-100 text-center cursor-pointer hover:bg-white/80 transition-colors"
+          onClick={() => window.location.href = '/collection'}
         >
           <p className="text-sm text-gray-400">
-            🎨 {Math.floor(data.totalPoints / 100)} characters collected
+            🎨 {Math.floor(data.totalPoints / 100)} characters collected — View Collection →
           </p>
         </motion.div>
       </div>
