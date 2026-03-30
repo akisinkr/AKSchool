@@ -3,28 +3,36 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ReactNode } from 'react'
+import { I18nProvider, useI18n } from '@/lib/i18n/context'
 
-const TABS = [
-  { label: 'Dashboard', href: '/admin' },
-  { label: 'Curriculum', href: '/admin/curriculum' },
-  { label: 'School Input', href: '/admin/school-input' },
-  { label: 'Rewards & Messages', href: '/admin/rewards' },
-]
-
-export default function AdminLayout({ children }: { children: ReactNode }) {
+function AdminLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const { locale, setLocale, t } = useI18n()
+
+  const TABS = [
+    { label: t('admin', 'dashboard'), href: '/admin' },
+    { label: t('admin', 'curriculum'), href: '/admin/curriculum' },
+    { label: t('admin', 'schoolInput'), href: '/admin/school-input' },
+    { label: t('admin', 'rewards'), href: '/admin/rewards' },
+  ]
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">AK Learning Platform</h1>
-          <span className="text-sm text-gray-400">Admin</span>
+          <h1 className="text-xl font-bold text-gray-800">{t('admin', 'title')}</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLocale(locale === 'en' ? 'ko' : 'en')}
+              className="text-sm px-3 py-1 rounded-full border border-gray-200 hover:border-gray-300 transition-colors"
+            >
+              {locale === 'en' ? '🇰🇷 한국어' : '🇺🇸 English'}
+            </button>
+            <span className="text-sm text-gray-400">{t('admin', 'admin')}</span>
+          </div>
         </div>
       </header>
 
-      {/* Tab navigation */}
       <nav className="bg-white border-b border-gray-200 px-6">
         <div className="max-w-5xl mx-auto flex gap-1 -mb-px">
           {TABS.map((tab) => {
@@ -49,10 +57,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {/* Content */}
       <main className="max-w-5xl mx-auto px-6 py-8">
         {children}
       </main>
     </div>
+  )
+}
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
+    <I18nProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </I18nProvider>
   )
 }
