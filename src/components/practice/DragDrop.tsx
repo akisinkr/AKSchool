@@ -43,9 +43,26 @@ export function DragDrop({
   }
 
   function handleBlankTap(blank: string) {
-    if (showFeedback || !selectedTile) return
-    if (filledBlanks[blank] !== undefined) return
+    if (showFeedback) return
 
+    // If blank is already filled, tap it to remove the tile
+    if (filledBlanks[blank] !== undefined) {
+      const removedTile = filledBlanks[blank]
+      setFilledBlanks((prev) => {
+        const next = { ...prev }
+        delete next[blank]
+        return next
+      })
+      setUsedTiles((prev) => {
+        const next = new Set(prev)
+        next.delete(removedTile)
+        return next
+      })
+      return
+    }
+
+    // Place selected tile into blank
+    if (!selectedTile) return
     setFilledBlanks((prev) => ({ ...prev, [blank]: selectedTile }))
     setUsedTiles((prev) => new Set(prev).add(selectedTile))
     setSelectedTile(null)
@@ -83,7 +100,7 @@ export function DragDrop({
         animate={{ opacity: 1 }}
         className="mb-4 text-sm text-amber-400"
       >
-        Tap a number, then tap the blank to place it
+        Tap a number, then tap the blank to place it. Tap a filled blank to remove it.
       </motion.p>
 
       {attempt === 1 && (
