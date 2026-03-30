@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { TopicLibrary } from '@/components/admin/TopicLibrary'
 import { TopicPreview } from '@/components/admin/TopicPreview'
-import { createClient } from '@/lib/supabase/client'
 
 interface SubjectData {
   id: string
@@ -25,106 +24,43 @@ interface SubjectData {
 
 export default function CurriculumPage() {
   const [subjects, setSubjects] = useState<SubjectData[]>([])
+  const [studentId, setStudentId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [previewTopic, setPreviewTopic] = useState<SubjectData['topics'][number] | null>(null)
   const [saving, setSaving] = useState(false)
 
   const loadData = useCallback(async () => {
-    const supabase = createClient()
-
-    const { data: student } = await supabase
-      .from('student_profiles')
-      .select('id')
-      .limit(1)
-      .single()
-
-    if (!student) { setLoading(false); return }
-
-    const { data: subjectsData } = await supabase
-      .from('subjects')
-      .select('id, name, sort_order')
-      .eq('student_id', student.id)
-      .eq('is_active', true)
-      .order('sort_order')
-
-    if (!subjectsData) { setLoading(false); return }
-
-    const result: SubjectData[] = []
-
-    for (const subject of subjectsData) {
-      const [settingsRes, topicsRes] = await Promise.all([
-        supabase
-          .from('curriculum_settings')
-          .select('current_topic_id, rotation_mode')
-          .eq('student_id', student.id)
-          .eq('subject_id', subject.id)
-          .single(),
-        supabase
-          .from('topics')
-          .select('id, display_name, difficulty, cpa_anchor, sharon_analogy, tags, kis_curriculum_aligned, is_active')
-          .eq('subject_id', subject.id)
-          .order('difficulty'),
-      ])
-
-      const currentTopicId = settingsRes.data?.current_topic_id || null
-      const topics = (topicsRes.data || []) as SubjectData['topics']
-      const currentTopic = topics.find((t) => t.id === currentTopicId)
-
-      result.push({
-        id: subject.id,
-        name: subject.name,
-        currentTopicId,
-        currentTopicName: currentTopic?.display_name || null,
-        rotationMode: (settingsRes.data?.rotation_mode as 'auto' | 'manual') || 'auto',
-        topics,
-      })
-    }
-
-    setSubjects(result)
+    const res = await fetch('/api/admin-curriculum')
+    if (!res.ok) { setLoading(false); return }
+    const data = await res.json()
+    setSubjects(data.subjects)
+    setStudentId(data.studentId)
     setLoading(false)
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
 
   async function handleChangeTopic(subjectId: string, topicId: string) {
-    const supabase = createClient()
-    const { data: student } = await supabase
-      .from('student_profiles')
-      .select('id')
-      .limit(1)
-      .single()
-
-    if (!student) return
+    if (!studentId) return
     setSaving(true)
-
-    await fetch('/api/curriculum', {
+    await fetch('/api/admin-curriculum', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId: student.id, subjectId, topicId }),
+      body: JSON.stringify({ studentId, subjectId, topicId }),
     })
-
     await loadData()
     setSaving(false)
   }
 
   async function handleToggleRotation(subjectId: string, currentMode: 'auto' | 'manual') {
-    const supabase = createClient()
-    const { data: student } = await supabase
-      .from('student_profiles')
-      .select('id')
-      .limit(1)
-      .single()
-
-    if (!student) return
+    if (!studentId) return
     setSaving(true)
-
     const newMode = currentMode === 'auto' ? 'manual' : 'auto'
-    await fetch('/api/curriculum', {
+    await fetch('/api/admin-curriculum', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId: student.id, subjectId, rotationMode: newMode }),
+      body: JSON.stringify({ studentId, subjectId, rotationMode: newMode }),
     })
-
     await loadData()
     setSaving(false)
   }
@@ -151,7 +87,6 @@ export default function CurriculumPage() {
 
       {subjects.map((subject) => (
         <div key={subject.id} className="space-y-4">
-          {/* Subject header */}
           <div className="flex items-center justify-between">
             <div>
               <h3 className={`text-base font-semibold ${
@@ -164,7 +99,6 @@ export default function CurriculumPage() {
               </p>
             </div>
 
-            {/* Rotation toggle */}
             <div className="flex items-center gap-3">
               <span className="text-xs text-gray-400">Rotation:</span>
               <button
@@ -187,7 +121,6 @@ export default function CurriculumPage() {
             </div>
           </div>
 
-          {/* Topic library */}
           <TopicLibrary
             topics={subject.topics}
             currentTopicId={subject.currentTopicId}
@@ -197,7 +130,6 @@ export default function CurriculumPage() {
         </div>
       ))}
 
-      {/* Topic preview modal */}
       <TopicPreview topic={previewTopic} onClose={() => setPreviewTopic(null)} />
     </div>
   )

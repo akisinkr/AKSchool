@@ -7,9 +7,6 @@ import { PointsBar } from '@/components/home/PointsBar'
 import { SubjectCard } from '@/components/home/SubjectCard'
 import { AriaGreeting } from '@/components/home/AriaGreeting'
 import { CharacterUnlock } from '@/components/gamification/CharacterUnlock'
-import { createClient } from '@/lib/supabase/client'
-
-const REWARD_MILESTONES = [500, 1500, 3500]
 
 interface HomeData {
   studentName: string
@@ -35,83 +32,12 @@ export default function Home() {
 
   useEffect(() => {
     async function loadHomeData() {
-      const supabase = createClient()
-      const today = new Date().toISOString().split('T')[0]
-
-      // For now, load Sharon's data directly (single student app)
-      const { data: student } = await supabase
-        .from('student_profiles')
-        .select('id, name')
-        .limit(1)
-        .single()
-
-      if (!student) {
+      const res = await fetch('/api/home-data')
+      if (!res.ok) {
         setLoading(false)
         return
       }
-
-      // Parallel queries
-      const [streakResult, pointsResult, subjectsResult, rewardsResult] = await Promise.all([
-        supabase.from('streaks').select('*').eq('student_id', student.id).single(),
-        supabase.from('points_ledger').select('points').eq('student_id', student.id),
-        supabase
-          .from('subjects')
-          .select('id, name, color_theme, sort_order, curriculum_settings(current_topic_id, topics(display_name))')
-          .eq('student_id', student.id)
-          .eq('is_active', true)
-          .order('sort_order'),
-        supabase
-          .from('rewards')
-          .select('milestone_pts, description_en')
-          .eq('student_id', student.id)
-          .is('earned_at', null)
-          .order('milestone_pts')
-          .limit(1),
-      ])
-
-      const totalPoints = (pointsResult.data || []).reduce((sum, r) => sum + r.points, 0)
-
-      // Check today's sessions
-      const { data: todaySessions } = await supabase
-        .from('sessions')
-        .select('subject_id, session_completed')
-        .eq('student_id', student.id)
-        .eq('date', today)
-        .eq('session_completed', true)
-
-      const completedSubjectIds = new Set((todaySessions || []).map((s) => s.subject_id))
-
-      // Find next milestone
-      const nextMilestone = REWARD_MILESTONES.find((m) => m > totalPoints)
-      const rewardData = rewardsResult.data?.[0]
-
-      const subjects = (subjectsResult.data || []).map((s) => {
-        const cs = (s as Record<string, unknown>).curriculum_settings as
-          | Array<{ current_topic_id: string; topics: { display_name: string } | null }>
-          | undefined
-        const currentTopic = cs?.[0]?.topics?.display_name || 'Not set'
-
-        return {
-          id: s.id,
-          name: s.name,
-          colorTheme: (s.name.toLowerCase() === 'math' ? 'math' : 'english') as 'math' | 'english',
-          currentTopic,
-          mascotEmoji: s.name.toLowerCase() === 'math' ? '🔢' : '📖',
-          accuracy: 0,
-          isCompleteToday: completedSubjectIds.has(s.id),
-        }
-      })
-
-      setData({
-        studentName: student.name,
-        streak: streakResult.data || { current_streak: 0, longest_streak: 0, freeze_count: 0 },
-        totalPoints,
-        subjects,
-        nextReward: nextMilestone
-          ? { milestone: nextMilestone, description: rewardData?.description_en || null }
-          : null,
-        ariaMessage: null,
-      })
+      setData(await res.json())
       setLoading(false)
     }
 
