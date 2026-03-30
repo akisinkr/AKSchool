@@ -29,7 +29,7 @@ export async function updateLearnerProfile(studentId: string) {
 
   // Filter to this student's results
   const studentResults = (results || []).filter((r) => {
-    const session = r.sessions as Record<string, unknown> | null
+    const session = r.sessions as unknown as Record<string, unknown> | null
     return session && (session as Record<string, string>).student_id === studentId
   })
 

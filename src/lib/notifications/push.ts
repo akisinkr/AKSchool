@@ -22,7 +22,7 @@ export async function subscribeToPush(vapidPublicKey: string): Promise<PushSubsc
   const registration = await navigator.serviceWorker.ready
   const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
   })
 
   return subscription

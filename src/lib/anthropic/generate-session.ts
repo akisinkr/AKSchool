@@ -180,7 +180,23 @@ function normalizePractice(raw: any): PracticeQuestions {
     // Normalize tiles — might be objects
     let tiles = q.tiles || []
     if (tiles.length > 0 && typeof tiles[0] === 'object') {
-      tiles = tiles.map((t: any) => t.text || t.label || String(t))
+      tiles = tiles.map((t: any) => t.text || t.label || t.value || String(t))
+    }
+
+    // Normalize blanks — might be objects
+    let blanks = q.blanks || []
+    if (blanks.length > 0 && typeof blanks[0] === 'object') {
+      blanks = blanks.map((b: any) => b.text || b.label || b.position || b.id || String(b))
+    }
+
+    // Build correct_mapping from blanks if AI provided it differently
+    const correctMapping: Record<string, string> = { ...(q.correct_mapping || q.correctMapping || {}) }
+    if (Object.keys(correctMapping).length === 0 && Array.isArray(q.blanks) && q.blanks.length > 0 && typeof q.blanks[0] === 'object') {
+      q.blanks.forEach((b: any) => {
+        const key = b.text || b.label || b.position || b.id || ''
+        const val = b.correct_answer || b.answer || ''
+        if (key && val) correctMapping[key] = val
+      })
     }
 
     return {
@@ -190,7 +206,7 @@ function normalizePractice(raw: any): PracticeQuestions {
       options,
       correct_index: correctIndex,
       tiles,
-      blanks: q.blanks || [],
+      blanks,
       correct_mapping: q.correct_mapping || q.correctMapping || {},
       image_descriptions: imageDescs,
       acceptable_answers: q.acceptable_answers || q.acceptableAnswers || [],

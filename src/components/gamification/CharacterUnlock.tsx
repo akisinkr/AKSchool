@@ -8,6 +8,8 @@ interface CharacterUnlockProps {
   onDismiss: () => void
 }
 
+// Rarity glow styles for future use with character illustrations
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RARITY_GLOWS: Record<string, string> = {
   common: 'shadow-amber-300/50',
   uncommon: 'shadow-emerald-300/50',

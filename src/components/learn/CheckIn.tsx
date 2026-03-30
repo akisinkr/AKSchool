@@ -16,6 +16,7 @@ interface CheckInProps {
 }
 
 export function CheckIn({
+  ariaScript,
   answerOptions,
   correctIndex,
   warmResponseCorrect,
@@ -56,6 +57,17 @@ export function CheckIn({
       >
         Quick Check-In
       </motion.div>
+
+      {/* Question text */}
+      {ariaScript && (
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xl text-amber-900 text-center font-medium mb-8 max-w-md"
+        >
+          {ariaScript}
+        </motion.p>
+      )}
 
       {/* Aria speaking indicator */}
       {isAriaPlaying && (

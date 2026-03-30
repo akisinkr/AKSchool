@@ -58,7 +58,6 @@ export function LearnStage({ content, isAriaPlaying, onComplete, onPhaseChange }
           isAriaPlaying={isAriaPlaying}
         />
       )}
-      )}
     </StageTransition>
   )
 }

@@ -68,6 +68,17 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
       onComplete: handleQuestionComplete,
     }
 
+    // Skip questions that don't have enough data — auto-advance with correct
+    const hasOptions = (q.options?.length ?? 0) >= 2
+    const hasTiles = (q.tiles?.length ?? 0) >= 1 && (q.blanks?.length ?? 0) >= 1
+    const hasImages = (q.image_descriptions?.length ?? 0) >= 2
+    const hasAcceptable = (q.acceptable_answers?.length ?? 0) >= 1
+
+    if (q.type === 'multiple_choice' && !hasOptions) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
+    if (q.type === 'drag_drop' && !hasTiles) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
+    if (q.type === 'image_match' && !hasImages) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
+    if (q.type === 'typed_spoken' && !hasAcceptable && !q.stem) { setTimeout(() => handleQuestionComplete(true, false, null), 100); return null }
+
     switch (q.type) {
       case 'multiple_choice':
         return (

@@ -63,6 +63,8 @@ export async function awardSessionPoints(
   totalAwarded: number
   totalPoints: number
   characterUnlocked: string | null
+  surprise: string | null
+  streak: { currentStreak: number; freezeEarned: boolean; freezeUsed: boolean; dailyStreakBonus: boolean }
 }> {
   const breakdown: Array<{ action: PointAction; points: number }> = []
   let lastUnlocked: string | null = null
