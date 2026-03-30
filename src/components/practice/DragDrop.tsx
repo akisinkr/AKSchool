@@ -77,6 +77,15 @@ export function DragDrop({
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12">
       <PointsAnimation points={5} show={showPoints} />
 
+      {/* Instructions */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="mb-4 text-sm text-amber-400"
+      >
+        Tap a number, then tap the blank to place it
+      </motion.p>
+
       {attempt === 1 && (
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-2 text-sm text-orange-400 font-medium">
           Try again!
@@ -115,7 +124,7 @@ export function DragDrop({
                   : 'border-amber-200 bg-white text-amber-300'
             }`}
           >
-            {filledBlanks[blank] || blank}
+            {filledBlanks[blank] || '?'}
           </motion.button>
         ))}
       </div>
