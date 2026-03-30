@@ -28,14 +28,15 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
   const [results, setResults] = useState<QuestionResult[]>([])
   const [showPerfectBonus, setShowPerfectBonus] = useState(false)
 
-  const question = content.questions[currentIndex]
+  const questions = content.questions || []
+  const question = questions[currentIndex]
 
   const handleQuestionComplete = useCallback(
     (correct: boolean, retried: boolean, retryCorrect: boolean | null) => {
       const newResults = [...results, { correct, retried, retryCorrect }]
       setResults(newResults)
 
-      if (currentIndex < content.questions.length - 1) {
+      if (currentIndex < questions.length - 1) {
         const nextIndex = currentIndex + 1
         setTimeout(() => {
           setCurrentIndex(nextIndex)
@@ -55,14 +56,15 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
         }
       }
     },
-    [currentIndex, results, content.questions.length, onComplete, onQuestionChange]
+    [currentIndex, results, questions.length, onComplete, onQuestionChange]
   )
 
-  function renderQuestion(q: PracticeQuestion) {
+  function renderQuestion(q: PracticeQuestion | undefined) {
+    if (!q) return null
     const commonProps = {
       isAriaPlaying,
-      warmResponseCorrect: q.warm_response_correct,
-      warmResponseIncorrect: q.warm_response_incorrect,
+      warmResponseCorrect: q.warm_response_correct || 'Nice!',
+      warmResponseIncorrect: q.warm_response_incorrect || 'Not quite — try again!',
       onComplete: handleQuestionComplete,
     }
 
@@ -114,7 +116,7 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
       {/* Progress bar */}
       <div className="fixed top-0 left-0 right-0 z-40 px-4 pt-4">
         <div className="flex gap-2 max-w-sm mx-auto">
-          {content.questions.map((_, i) => (
+          {questions.map((_, i) => (
             <div key={i} className="flex-1 h-2 rounded-full overflow-hidden bg-amber-100">
               <motion.div
                 className={`h-full rounded-full ${
@@ -134,7 +136,7 @@ export function PracticeStage({ content, isAriaPlaying, onComplete, onQuestionCh
           ))}
         </div>
         <p className="text-center text-sm text-amber-500 mt-2">
-          {currentIndex + 1} of {content.questions.length}
+          {currentIndex + 1} of {questions.length}
         </p>
       </div>
 

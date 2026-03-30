@@ -17,9 +17,16 @@ interface ExplanationProps {
 }
 
 export function Explanation({ chunks, onComplete, isAriaPlaying, currentChunkFromAria }: ExplanationProps) {
+  const safeChunks = chunks || []
   const [currentChunk, setCurrentChunk] = useState(currentChunkFromAria ?? 0)
-  const chunk = chunks[currentChunk]
-  const isLastChunk = currentChunk === chunks.length - 1
+
+  if (safeChunks.length === 0) {
+    onComplete()
+    return null
+  }
+
+  const chunk = safeChunks[currentChunk]
+  const isLastChunk = currentChunk === safeChunks.length - 1
 
   function handleNext() {
     if (isLastChunk) {
@@ -33,7 +40,7 @@ export function Explanation({ chunks, onComplete, isAriaPlaying, currentChunkFro
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 bg-gradient-to-b from-amber-50 to-orange-50">
       {/* Progress dots */}
       <div className="flex gap-2 mb-8">
-        {chunks.map((_, i) => (
+        {safeChunks.map((_, i) => (
           <motion.div
             key={i}
             className={`w-3 h-3 rounded-full ${

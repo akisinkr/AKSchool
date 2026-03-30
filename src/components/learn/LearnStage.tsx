@@ -31,9 +31,9 @@ export function LearnStage({ content, isAriaPlaying, onComplete, onPhaseChange }
     <StageTransition stageKey={phase} backgroundColor="#FFF8F0">
       {phase === 'hook' && (
         <Hook
-          ariaScript={content.hook.aria_script}
-          textOnscreen={content.hook.text_onscreen}
-          illustrationPrompt={content.hook.illustration_prompt}
+          ariaScript={content.hook?.aria_script || ''}
+          textOnscreen={content.hook?.text_onscreen || ''}
+          illustrationPrompt={content.hook?.illustration_prompt || ''}
           onComplete={() => advanceTo('explanation')}
           isAriaPlaying={isAriaPlaying}
         />
@@ -41,7 +41,7 @@ export function LearnStage({ content, isAriaPlaying, onComplete, onPhaseChange }
 
       {phase === 'explanation' && (
         <Explanation
-          chunks={content.explanation.chunks}
+          chunks={content.explanation?.chunks || []}
           onComplete={() => advanceTo('check_in')}
           isAriaPlaying={isAriaPlaying}
         />
@@ -49,14 +49,15 @@ export function LearnStage({ content, isAriaPlaying, onComplete, onPhaseChange }
 
       {phase === 'check_in' && (
         <CheckIn
-          ariaScript={content.check_in.aria_script}
-          answerOptions={content.check_in.answer_options}
-          correctIndex={content.check_in.correct_index}
-          warmResponseCorrect={content.check_in.warm_response_correct}
-          warmResponseIncorrect={content.check_in.warm_response_incorrect}
+          ariaScript={content.check_in?.aria_script || ''}
+          answerOptions={content.check_in?.answer_options || []}
+          correctIndex={content.check_in?.correct_index ?? 0}
+          warmResponseCorrect={content.check_in?.warm_response_correct || 'Nice work!'}
+          warmResponseIncorrect={content.check_in?.warm_response_incorrect || 'Not quite, but good thinking!'}
           onComplete={(wasCorrect) => onComplete(wasCorrect)}
           isAriaPlaying={isAriaPlaying}
         />
+      )}
       )}
     </StageTransition>
   )
