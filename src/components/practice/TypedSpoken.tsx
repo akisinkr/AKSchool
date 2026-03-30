@@ -33,9 +33,12 @@ export function TypedSpoken({
     if (!answer.trim() || showFeedback) return
 
     const normalized = answer.trim().toLowerCase()
-    const correct = acceptableAnswers.some(
-      (a) => a.toLowerCase() === normalized || normalized.includes(a.toLowerCase())
-    )
+    // If no acceptable answers defined, accept any non-empty response (open-ended question)
+    const correct = acceptableAnswers.length === 0
+      ? normalized.length > 0
+      : acceptableAnswers.some(
+          (a) => a.toLowerCase() === normalized || normalized.includes(a.toLowerCase())
+        )
 
     setIsCorrect(correct)
     setShowFeedback(true)

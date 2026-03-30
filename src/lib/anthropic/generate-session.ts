@@ -189,14 +189,44 @@ function normalizePractice(raw: any): PracticeQuestions {
       blanks = blanks.map((b: any) => b.text || b.label || b.position || b.id || String(b))
     }
 
-    // Build correct_mapping from blanks if AI provided it differently
+    // Build correct_mapping from various AI response formats
     const correctMapping: Record<string, string> = { ...(q.correct_mapping || q.correctMapping || {}) }
-    if (Object.keys(correctMapping).length === 0 && Array.isArray(q.blanks) && q.blanks.length > 0 && typeof q.blanks[0] === 'object') {
-      q.blanks.forEach((b: any) => {
-        const key = b.text || b.label || b.position || b.id || ''
-        const val = b.correct_answer || b.answer || ''
-        if (key && val) correctMapping[key] = val
-      })
+
+    // If mapping is empty, try to build from original blanks (before normalization)
+    if (Object.keys(correctMapping).length === 0 && Array.isArray(q.blanks) && q.blanks.length > 0) {
+      if (typeof q.blanks[0] === 'object') {
+        q.blanks.forEach((b: any) => {
+          const key = b.text || b.label || b.position || b.id || ''
+          const val = b.correct_answer || b.answer || ''
+          if (key && val) correctMapping[key] = val
+        })
+      }
+    }
+
+    // If still empty and there's a correct_answer field, map first blank to it
+    if (Object.keys(correctMapping).length === 0 && blanks.length > 0) {
+      const answer = q.correct_answer || q.answer || q.solution || ''
+      if (answer) {
+        blanks.forEach((b: string, i: number) => {
+          const ans = Array.isArray(answer) ? answer[i] : answer
+          if (ans) correctMapping[b] = String(ans)
+        })
+      }
+    }
+
+    // If STILL empty and we have exactly 1 blank + tiles with a correct_index, use that
+    if (Object.keys(correctMapping).length === 0 && blanks.length === 1 && tiles.length > 0 && correctIndex < tiles.length) {
+      correctMapping[blanks[0]] = tiles[correctIndex]
+    }
+
+    // Normalize acceptable_answers for typed_spoken
+    let acceptableAnswers = q.acceptable_answers || q.acceptableAnswers || q.accepted_answers || []
+    if (acceptableAnswers.length === 0) {
+      // Try to extract from correct_answer, answer, solution fields
+      const ans = q.correct_answer || q.answer || q.solution || q.expected_answer || ''
+      if (ans) {
+        acceptableAnswers = Array.isArray(ans) ? ans.map(String) : [String(ans)]
+      }
     }
 
     return {
@@ -207,9 +237,9 @@ function normalizePractice(raw: any): PracticeQuestions {
       correct_index: correctIndex,
       tiles,
       blanks,
-      correct_mapping: q.correct_mapping || q.correctMapping || {},
+      correct_mapping: correctMapping,
       image_descriptions: imageDescs,
-      acceptable_answers: q.acceptable_answers || q.acceptableAnswers || [],
+      acceptable_answers: acceptableAnswers,
       warm_response_correct: q.warm_response_correct || q.warmResponseCorrect || q.feedback?.correct || 'Nice!',
       warm_response_incorrect: q.warm_response_incorrect || q.warmResponseIncorrect || q.feedback?.incorrect || 'Not quite — try again!',
     }
